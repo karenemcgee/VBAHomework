@@ -1,0 +1,113 @@
+Sub Stocks()
+
+    'VARIABLES
+    Dim row As Long
+    Dim CurrentTicker As String
+    Dim SummaryRow As Long
+    Dim LastRow As Long
+    Dim TotalVolume As Double
+    Dim OpenPrice As Double
+    Dim ClosePrice As Double
+    Dim ws As Worksheet
+    
+    For Each ws In ActiveWorkbook.Worksheets
+        Sheets(ws.Name).Select
+        
+        'STARTING VALUES
+        CurrentTicker = Range("A2").Value
+        LastRow = (ActiveSheet.Cells(ActiveSheet.Rows.Count, "A").End(xlUp).row) + 1
+        TotalVolume = Range("G2").Value
+        SummaryRow = 2
+        OpenPrice = Range("C2").Value
+        
+        'NEW ROW LABELS
+        Range("I1").Value = "Ticker"
+        Range("J1").Value = "Yearly Change"
+        Range("K1").Value = "Percent Change"
+        Range("L1").Value = "Total Stock Volume"
+        
+        'LOOP
+        For row = 3 To LastRow
+        
+            If Cells(row, 1).Value = CurrentTicker Then
+                'CONTINUE ADDING TO VOLUME
+                TotalVolume = TotalVolume + Cells(row, 7).Value
+            
+            Else
+            
+                'FILL IN SUMMARY ROWS
+                ClosePrice = Cells(row - 1, 6).Value
+                Cells(SummaryRow, 9).Value = CurrentTicker
+                Cells(SummaryRow, 10).Value = ClosePrice - OpenPrice
+                Cells(SummaryRow, 12).Value = TotalVolume
+                
+                'FOR PERCENT CHANGE ROW, CHECK IF ZERO
+                If OpenPrice = 0 Then
+                    Cells(SummaryRow, 11).Value = "N/A"
+                Else
+                    Dim YearlyChange As Double
+                    YearlyChange = ClosePrice - OpenPrice
+                    Cells(SummaryRow, 11).Value = YearlyChange / OpenPrice
+                    Cells(SummaryRow, 11).NumberFormat = "0.00%"
+                End If
+                
+                'COLOR YEARLY CHANGE
+                If Cells(SummaryRow, 10).Value < 0 Then
+                    Cells(SummaryRow, 10).Interior.ColorIndex = 3
+                
+                Else: Cells(SummaryRow, 10).Interior.ColorIndex = 4
+                
+                End If
+                
+                'SET NEW VALUES
+                SummaryRow = SummaryRow + 1
+                CurrentTicker = Cells(row, 1).Value
+                TotalVolume = Cells(row, 7).Value
+                OpenPrice = Cells(row, 3).Value
+            
+            End If
+        
+        Next row
+        
+        'SORT PERCENT CHANGE COLUMN DESCENDING'
+        Range("I1:L" & LastRow).Sort Key1:=Range("K1:K" & LastRow), Order1:=xlDescending, Header:=xlYes
+    
+        'SET UP SUMMARY BOX
+        Range("O2").Value = "Greatest % Increase"
+        Range("O3").Value = "Greatest % Decrease"
+        Range("O4").Value = "Greatest Total Volume"
+        Range("P1").Value = "Ticker"
+        Range("Q1").Value = "Value"
+        
+        'FILL IN GREATEST % INCREASE
+        
+        If Range("K2").Value <> "N/A" Then
+            Range("P2").Value = Range("I2").Value
+            Range("Q2").Value = Range("K2").Value
+            Range("Q2").NumberFormat = "0.00%"
+        ElseIf Range("K2").Value = "N/A" Then
+            Range("P2").Value = Range("I3").Value
+            Range("Q2").Value = Range("K3").Value
+            Range("Q2").NumberFormat = "0.00%"
+        
+        End If
+        
+        'FILL IN GREATEST % DECREASE
+        LastRowBonus = ActiveSheet.Cells(ActiveSheet.Rows.Count, "K").End(xlUp).row
+        Range("P3").Value = Cells(LastRowBonus, 9).Value
+        Range("Q3").Value = Cells(LastRowBonus, 11).Value
+        Range("Q3").NumberFormat = "0.00%"
+        
+        'FILL IN GREATEST TOTAL VOLUME
+        Range("I1:L" & LastRowBonus).Sort Key1:=Range("L1:L" & LastRowBonus), Order1:=xlDescending, Header:=xlYes
+        Range("P4").Value = Range("I2").Value
+        Range("Q4").Value = Range("L2").Value
+        
+        'SORT BACK TO ORIGINAL
+        Range("I1:L" & LastRowBonus).Sort Key1:=Range("I1:I" & LastRowBonus), Order1:=xlAscending, Header:=xlYes
+        
+        ws.Cells.EntireColumn.AutoFit
+        
+    Next ws
+
+End Sub
